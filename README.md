@@ -1,18 +1,24 @@
-# Forza data tools
-Building some tools for playing with the UDP data out feature from the Forza Motorsport 7 / Forza Horizon 4 games. Built with [golang](https://golang.org/dl/).  
+# Forza Data Tools / Forza Stats
+Some tools for playing with the UDP data out feature from the Forza Motorsport 7 / Forza Horizon 4 games. Built with [golang](https://golang.org/dl/).  
+
+Forza Stats data writing currently for use in [Forza Horizon 5 Leaderboards and Stat Tools](https://docs.google.com/spreadsheets/d/1UzB2IIzqNqzs9sWWV65w0VVHUmUaeFH1eGlK4-jyNMc/edit?usp=sharing) spreadsheet.
 
 
 
 
-## Features
+## Forza Data Tools (fdt) Features
 - Realtime telemetry output to terminal  
 - Telemetry data logging to csv file  
 - Serve Forza Telemetry data as JSON over HTTP
-- Display race statistics from race/drive (when logging to CSV)  
+- Display race statistics from race/drive (when logging to CSV)
+
+## Forza Stats (writestats) Features
+- Calculating race telemetry statistics from csv log
+- Reading/Writing to stats spreadsheet through Google Sheets API
+- Remotely trigger spreadsheet scripts through Apps Script API
 
 
 
-(Feel free to open an issue if you have any suggestions/feature requests)
 &nbsp;
 
 ## Setup
@@ -22,26 +28,32 @@ Forza Motorsport 7 select the "car dash" format.
 &nbsp;
 
 ## Build
-Compile the application with: `go build -o fdt`  
+Forza Data Tools telemetry processing included as "fdt.exe" (already built)  
+To build the writestats application, compile with the command: `go build -o writestats`  
 
 &nbsp;
 
 ## Run
-### Command line options
+### Forza Data Tools command line options
 Specify a CSV file to log to: `-c log.csv` (File will be overwritten if it exists)    
-Enable support for Forza Horizon: `-z`    
+EV mode - enables continuous datastream even in menus (for use in collecting electric vehicle stats): `-e`    
 Enable JSON server: `-j`   
 Disable realtime terminal output: `-q`   
 Enable debug information: `-d`
 
-&nbsp;
 
-##### Example (Forza Horizon)
-`fdt -z -j -c log.csv`  
-`fdt -z`  
+##### Example
+`fdt -c log.csv`  
+`fdt -e -c log.csv`  
 
-##### Example (Forza Motorsport)
-`fdt -c -j log.csv`  
+### Writestats command line options
+Default: writes stat line to sheet and triggers color script to color output data  
+Currently for use in Forza Horizon 5 Leaderboards and Stat Tools Spreadsheet  
+
+
+##### Example
+`writestats`  
+
 
 &nbsp;
 
