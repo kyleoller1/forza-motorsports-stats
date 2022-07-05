@@ -23,7 +23,11 @@ Forza Stats data writing currently for use in [Forza Horizon 5 Leaderboards and 
 
 ## Setup
 From your game HUD options, enable the data out feature and set it to use the IP address of your computer. Port 9999.  
-Forza Motorsport 7 select the "car dash" format.
+Forza Motorsport 7 select the "car dash" format.  
+
+### Writestats credentials: change client id and client secret in "credentials_template" to OAuth information for your Google Cloud Project. Then rename to simply "credentials.json" and the program will be able to read credentials properly. This ensures sensitive information is not uploaded publically.  
+
+Once credentials are properly set up, running the writestats program will prompt the user with a URL to paste into a browser. This will direct you to to authorizoation for your Google account and will send you to a URL that contains a code which can be pasted back into the command prompt, thus successfully authorizing the user to write to the target sheet and create a token. Tokens expire every 7 days and once that occurs, simply delete "token.json" that is created from aforementioned process and generate a new one in the same manner. Currently only set up with [Forza Horizon 5 Leaderboards and Stat Tools](https://docs.google.com/spreadsheets/d/1UzB2IIzqNqzs9sWWV65w0VVHUmUaeFH1eGlK4-jyNMc/edit?usp=sharing) spreadsheet, but could be modified for your own spreadsheet by changing the "spreadsheetID" variable in writestats.go (May need further setup with Google Cloud for this to work though)
 
 &nbsp;
 
