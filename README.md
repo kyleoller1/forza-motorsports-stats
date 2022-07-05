@@ -53,11 +53,14 @@ Enable debug information: `-d`
 
 ### Writestats command line options
 Default: writes stat line to sheet and triggers color script to color output data  
+Ordinal Info Collection Mode: `-o` Allows for collection of ordinal numbers for input into info sheet  
+
 Currently for use in Forza Horizon 5 Leaderboards and Stat Tools Spreadsheet  
 
 
 ##### Example
-`writestats`  
+`writestats`   
+`writestats -o`  
 
 
 &nbsp;
