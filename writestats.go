@@ -3,17 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-
-	// "strings"
-
-	// "strconv"
-
-	//"reflect"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -76,6 +71,17 @@ func saveToken(path string, token *oauth2.Token) {
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
+}
+
+// Check if flag was passed
+func isFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }
 
 func main() {
@@ -156,6 +162,10 @@ func main() {
 			log.Fatalf("Current Car has not been added to Ordinal Data sheet!\n Please add the car's info and run the program again.\n")
 		}
 	}
+
+	/*if isFlagPassed("o") == true {
+		break;
+	}*/
 
 	//Write Data to Output Sheet
 	writeRange := "Stat Builder!M8" // or "sheet1:A1" if you have a different sheet
