@@ -1,4 +1,4 @@
 testing/*
 *.csv
-fdt
+writestats.exe
 .DS_Store
