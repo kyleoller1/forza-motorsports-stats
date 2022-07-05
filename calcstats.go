@@ -328,6 +328,27 @@ func getOrdinalNumber(csvFile string) (string, error) {
 	return rows[1][53], nil
 }
 
+func getAllOrdinalNumbers(csvFile string) ([]string, error) {
+	rows := readLog(csvFile)
+	if len(rows) < 1 {
+		return nil, errors.New("csvFile is empty.")
+	}
+	var o []string
+	lastVal := ""
+	for i := range rows {
+		if i == 0 { // skip first row (header/column names)
+			continue
+		}
+		// Add Ordinals from row to array
+		num := rows[i][53]
+		if lastVal == "" || num != lastVal {
+			o = append(o, num)
+			lastVal = num
+		}
+	}
+	return o, nil
+}
+
 // `intToFloatString` takes an integer `n` and calculates the floating point value representing `n/100` as a string.
 // func intToFloatString(n int) string {
 // 	intgr := n / 100

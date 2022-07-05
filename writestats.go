@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -85,6 +86,15 @@ func isFlagPassed(name string) bool {
 }
 
 func main() {
+	// Parse Flags
+	ordinalPTR := flag.Bool("o", false, "Enables Ordinal Info Collection Mode")
+	flag.Parse()
+	ordinalMode := *ordinalPTR
+
+	if ordinalMode {
+		log.Println("Ordinal Info Collection mode enabled")
+	}
+
 	ctx := context.Background()
 	b, err := ioutil.ReadFile("credentials.json")
 	if err != nil {
@@ -122,7 +132,7 @@ func main() {
 	}
 
 	ordinalMap := make(map[string]Car)
-	ordinalNumber, err := getOrdinalNumber(("log.csv")) // Get ordinal number of current car
+	ordinalNumber, err := getOrdinalNumber("log.csv") // Get ordinal number of current car
 	if err != nil {
 		log.Fatalf("Unable to retrieve Ordinal Number. CSV file is likely empty.")
 	}
@@ -140,6 +150,9 @@ func main() {
 		// Store all information in a map where the Ordinal Number is the key and
 		// the value is a struct "Car", which stores all info about the car
 		for _, row := range resp.Values {
+			if len(row) < 13 { // If the information row is incomplete
+				continue
+			}
 			ordinalMap[fmt.Sprintf("%v", row[0])] = Car{
 				Manufacturer: fmt.Sprintf("%v", row[1]),
 				Model:        fmt.Sprintf("%v", row[2]),
@@ -155,77 +168,101 @@ func main() {
 				Value:        fmt.Sprintf("%v", row[12]),
 			}
 		}
-
-		if val, isPresent := ordinalMap[ordinalNumber]; isPresent { // Check if the ordinal Number is in the map
-			currentCar = val
-		} else { // If the Ordinal Number is not in the map then the car likely hasn't been added to the sheet
-			log.Fatalf("Current Car has not been added to Ordinal Data sheet!\n Please add the car's info and run the program again.\n")
+		if isFlagPassed("o") == false {
+			if val, isPresent := ordinalMap[ordinalNumber]; isPresent { // Check if the ordinal Number is in the map
+				currentCar = val
+			} else { // If the Ordinal Number is not in the map then the car likely hasn't been added to the sheet
+				log.Fatalf("Current Car has not been added to Ordinal Data sheet!\n Please add the car's info and run the program again.\n")
+			}
 		}
 	}
 
-	/*if isFlagPassed("o") == true {
-		break;
-	}*/
-
-	//Write Data to Output Sheet
-	writeRange := "Stat Builder!M8" // or "sheet1:A1" if you have a different sheet
-	statValues := calcstats("log.csv")
-	carFullName := currentCar.Manufacturer + " " + currentCar.Model
+	// Write Stat Data to Sheet
 	writeValues := []interface{}{}
-	writeValues = append(writeValues, // Builds Stat Line to leaderboard specifications
-		carFullName,            // Car Name
-		"",                     // Best Lap Time (not handled)
-		currentCar.Year,        // Year
-		currentCar.Country,     // Country
-		"",                     // Country Flag (not handled)
-		statValues[0],          // PI Class Number
-		currentCar.Designation, // Car Designation
-		currentCar.CarType,     // Car Type (Category)
-		statValues[1],          // Drivetrain (from actual stats, not default data)
-		currentCar.Setup,       // Engine Setup
-		currentCar.Litreage,    // Engine Litreage
-		currentCar.Engine,      // Engine
-		currentCar.Aspiration,  // Aspiration
-		statValues[11],         // Peak Boost
-		statValues[2],          // Peak Horsepower
-		statValues[3],          // Peak Torque
-		"",                     // Weight (not handled)
-		"",                     // Power to Weight (not handled)
-		statValues[4],          // 0-60 Time
-		statValues[5],          // 0-100 Time
-		statValues[6],          // 60-150 Time
-		statValues[7],          // 100-200 Time
-		statValues[10],         // Top Speed
-		"",                     // Track Top Speed (not handled)
-		statValues[8],          // 60-0 Time
-		statValues[9],          // 100-0 Time
-		"",                     // Lateral Gs at 60mph (not handled)
-		"",                     // Lateral Gs at 120mpg (not handled)
-		currentCar.Value)       // Car Value
+	var writeRange string
 
-	var vr sheets.ValueRange
-	vr.Values = append(vr.Values, writeValues)
+	if isFlagPassed("o") == true { // Enables Ordinal Info Collection Mode
+		ordinalSheetLength := len(ordinalMap)
+		writeRange = "Ordinal Data!A" + strconv.FormatInt(int64(ordinalSheetLength+1), 10)
+		rbValues := [][]interface{}{}
+		ordinalNums, err := getAllOrdinalNumbers("log.csv")
+		check(err)
+		for _, v := range ordinalNums {
+			wv := append(writeValues, v)
+			rbValues = append(rbValues, wv)
+		}
+		rb := &sheets.BatchUpdateValuesRequest{
+			ValueInputOption: "USER_ENTERED",
+		}
+		rb.Data = append(rb.Data, &sheets.ValueRange{
+			Range:  writeRange,
+			Values: rbValues,
+		})
+		_, err = srv.Spreadsheets.Values.BatchUpdate(spreadsheetId, rb).Context(ctx).Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		fmt.Println("Successfully printed ordinal numbers to output sheet!")
 
-	_, err = srv.Spreadsheets.Values.Update(spreadsheetId, writeRange, &vr).ValueInputOption("USER-ENTERED").Do()
-	if err != nil {
-		log.Fatalf("Unable to print data to sheet. %v", err)
+	} else { //Write Stat Line Data to Stat Builder Sheet
+		writeRange = "Stat Builder!M8"
+		statValues := calcstats("log.csv")
+		carFullName := currentCar.Manufacturer + " " + currentCar.Model
+		writeValues = append(writeValues, // Builds Stat Line to leaderboard specifications
+			carFullName,            // Car Name
+			"",                     // Best Lap Time (not handled)
+			currentCar.Year,        // Year
+			currentCar.Country,     // Country
+			"",                     // Country Flag (not handled)
+			statValues[0],          // PI Class Number
+			currentCar.Designation, // Car Designation
+			currentCar.CarType,     // Car Type (Category)
+			statValues[1],          // Drivetrain (from actual stats, not default data)
+			currentCar.Setup,       // Engine Setup
+			currentCar.Litreage,    // Engine Litreage
+			currentCar.Engine,      // Engine
+			currentCar.Aspiration,  // Aspiration
+			statValues[11],         // Peak Boost
+			statValues[2],          // Peak Horsepower
+			statValues[3],          // Peak Torque
+			"",                     // Weight (not handled)
+			"",                     // Power to Weight (not handled)
+			statValues[4],          // 0-60 Time
+			statValues[5],          // 0-100 Time
+			statValues[6],          // 60-150 Time
+			statValues[7],          // 100-200 Time
+			statValues[10],         // Top Speed
+			"",                     // Track Top Speed (not handled)
+			statValues[8],          // 60-0 Time
+			statValues[9],          // 100-0 Time
+			"",                     // Lateral Gs at 60mph (not handled)
+			"",                     // Lateral Gs at 120mpg (not handled)
+			currentCar.Value)       // Car Value
+
+		// Write Data to Sheet
+		var vr sheets.ValueRange
+		vr.Values = append(vr.Values, writeValues)
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, writeRange, &vr).ValueInputOption("USER-ENTERED").Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		fmt.Println("Successfully printed data to output sheet!")
+
+		// Trigger Apps Script to set data colors
+		service, err := script.NewService(ctx, option.WithHTTPClient(client))
+		if err != nil {
+			log.Fatalf("Unable to retrieve Script client: %v", err)
+		}
+
+		ScriptId := "1cwTGL840G2QJZNmwiSWK-VUlLq8Wjze6osbEqxDyXBVULAtQQJRURL6k"
+
+		req := script.ExecutionRequest{Function: "remoteSetDataColors", DevMode: true}
+
+		fmt.Println("Triggering color script...")
+		_, err = service.Scripts.Run(ScriptId, &req).Do()
+		if err != nil {
+			log.Fatalf("Unable to trigger script. %v", err)
+		}
+		fmt.Println("Script successfully set data colors!")
 	}
-	fmt.Println("Successfully printed data to output sheet!")
-
-	// Trigger Apps Script to set data colors
-	service, err := script.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		log.Fatalf("Unable to retrieve Script client: %v", err)
-	}
-
-	ScriptId := "1cwTGL840G2QJZNmwiSWK-VUlLq8Wjze6osbEqxDyXBVULAtQQJRURL6k"
-
-	req := script.ExecutionRequest{Function: "remoteSetDataColors", DevMode: true}
-
-	fmt.Println("Triggering color script...")
-	_, err = service.Scripts.Run(ScriptId, &req).Do()
-	if err != nil {
-		log.Fatalf("Unable to trigger script. %v", err)
-	}
-	fmt.Println("Script successfully set data colors!")
 }
