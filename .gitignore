@@ -1,6 +1,6 @@
 testing/*
 *.csv
 writestats.exe
-token.json
-credentials.json
+token
+credentials
 .DS_Store
