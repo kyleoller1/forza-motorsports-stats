@@ -40,21 +40,21 @@ To build the writestats application, compile with the command: `go build -o writ
 
 ## Run
 ### Forza Data Tools command line options
-Specify a CSV file to log to: `-c log.csv` (File will be overwritten if it exists)    
+Turn off csv logging: `-c`    
 EV mode - enables continuous datastream even in menus (for use in collecting electric vehicle stats): `-e`    
 Enable JSON server: `-j`   
 Disable realtime terminal output: `-q`   
 Enable debug information: `-d`
 
 
-##### Example
-`fdt -c log.csv`  
-`fdt -e -c log.csv`  
+##### Example 
+`fdt`  Runs program  
+`fdt -e`  Runs program with EV mode  
 
 ### Writestats command line options
 Default: writes stat line to sheet and triggers color script to color output data  
 Ordinal Info Collection Mode: `-o` Writes ordinal numbers into Ordinal Data sheet  
-Race Mode: `-r` Writes race statistics: best lap time and track top speed  
+Race Mode: `-r` Writes race statistics - best lap time and track top speed  
 
 Currently for use in Forza Horizon 5 Leaderboards and Stat Tools Spreadsheet  
 
