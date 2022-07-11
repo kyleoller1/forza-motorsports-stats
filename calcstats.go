@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/csv"
 	"errors"
-
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -67,6 +67,100 @@ func check(e error) {
 	if e != nil {
 		log.Fatalln(e)
 	}
+}
+
+// Calculate statistics during a race: Best lap time, track top speed, and lap sector times for La Selva Circuit
+// Returns Best Lap Time, followed by Track Top Speed
+func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string) {
+	rows := readLog(csvFile)
+	// check data is received before doing anything, else will crash due to no data in the csv file
+	if len(rows) < 1 {
+		log.Fatalf("CSV File is empty!")
+	}
+
+	// Find row numbers based on column header names (row 0)
+	bestLapRow := 0
+	currentLapRow := 0
+	distanceRow := 0
+	lapNumRow := 0
+	speedRow := 0
+
+	for k, v := range rows[0] {
+		if v == "BestLap" {
+			bestLapRow = k
+		} else if v == "CurrentLap" {
+			currentLapRow = k
+		} else if v == "DistanceTraveled" {
+			distanceRow = k
+		} else if v == "LapNumber" {
+			lapNumRow = k
+		} else if v == "Speed" {
+			speedRow = k
+		}
+	}
+
+	var t []float64  // array of current lap time values
+	var d []float64  // array of distance values
+	var l []float64  // array of lap number values
+	var s []float64  // array of speed values
+	var bl []float64 // array of BestLap time values
+
+	for i := range rows {
+		if i == 0 { // skip first row (header/column names)
+			continue
+		}
+
+		// Add current lap times from row to array
+		time, err := strconv.ParseFloat(rows[i][currentLapRow], 32)
+		check(err)
+		t = append(t, time)
+
+		// Add distance values from row to array
+		dist, err := strconv.ParseFloat(rows[i][distanceRow], 32)
+		check(err)
+		d = append(d, dist)
+
+		// Add current lap numbers from row to array
+		lap, err := strconv.ParseFloat(rows[i][lapNumRow], 32)
+		check(err)
+		l = append(l, lap)
+
+		// Add speed value from row to array
+		speed, err := strconv.ParseFloat(rows[i][speedRow], 32)
+		check(err)
+		s = append(s, (speed * 2.237)) // convert to MPH
+
+		// Add Best lap times from row to array
+		best, err := strconv.ParseFloat(rows[i][bestLapRow], 32)
+		check(err)
+		bl = append(bl, best)
+	}
+
+	// Find the best lap time
+	bestLap := bl[len(bl)-1]
+	// Check time at the end of the race if you're at the finish line
+	if d[len(d)-1]-(5951*l[len(l)-1]) > 5951 {
+		if t[len(t)-1] < bestLap {
+			bestLap = t[len(t)-1]
+		}
+	}
+	// Convert to 00:00.000 time format
+	min := strconv.FormatFloat(math.Floor(bestLap/60), 'f', 0, 32)
+	if len(min) == 1 {
+		min = "0" + min
+	}
+	sec := strconv.FormatFloat(math.Mod(bestLap, 60), 'f', 3, 32)
+	bestLapStr := min + ":" + sec
+
+	// Find the track top speed
+	sort.Float64s(s)
+	topSpeed := s[len(s)-1]
+	topSpeedStr := strconv.FormatFloat(topSpeed, 'f', 2, 32)
+
+	// Calculate Track Sector Times
+	// TODO
+
+	return bestLapStr, topSpeedStr
 }
 
 // calculate stats

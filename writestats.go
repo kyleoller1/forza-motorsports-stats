@@ -88,11 +88,15 @@ func isFlagPassed(name string) bool {
 func main() {
 	// Parse Flags
 	ordinalPTR := flag.Bool("o", false, "Enables Ordinal Info Collection Mode")
+	racePTR := flag.Bool("r", false, "Enables Race Mode for tracking best lap time, track top speed, and lap sector times (La Selva Circuit)")
 	flag.Parse()
 	ordinalMode := *ordinalPTR
+	raceMode := *racePTR
 
 	if ordinalMode {
 		log.Println("Ordinal Info Collection mode enabled")
+	} else if raceMode {
+		log.Println("Race mode enabled")
 	}
 
 	ctx := context.Background()
@@ -181,7 +185,7 @@ func main() {
 	writeValues := []interface{}{}
 	var writeRange string
 
-	if isFlagPassed("o") == true { // Enables Ordinal Info Collection Mode
+	if isFlagPassed("o") == true { // Enables Ordinal Info Collection Mode: Writes Ordinal numbers to Ordinal Data sheet
 		ordinalSheetLength := len(ordinalMap)
 		writeRange = "Ordinal Data!A" + strconv.FormatInt(int64(ordinalSheetLength+1), 10)
 		rbValues := [][]interface{}{}
@@ -204,7 +208,29 @@ func main() {
 		}
 		fmt.Println("Successfully printed ordinal numbers to output sheet!")
 
-	} else { //Write Stat Line Data to Stat Builder Sheet
+	} else if isFlagPassed("r") == true { // Enables Race Mode: writes Best Lap Time, Track Top Speed, Track Sector Times
+		timeWriteRange := "Stat Builder!N8"
+		speedWriteRange := "Stat Builder!AJ8"
+		bestLap, topSpeed := calcRaceStats("log.csv")
+		tWV := []interface{}{bestLap}
+		sWV := []interface{}{topSpeed}
+
+		// Write Data to Sheet
+		var vr sheets.ValueRange // Best Lap Time
+		vr.Values = append(vr.Values, tWV)
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, timeWriteRange, &vr).ValueInputOption("USER-ENTERED").Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		var vr2 sheets.ValueRange
+		vr2.Values = append(vr2.Values, sWV) // Track Top Speed
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, speedWriteRange, &vr2).ValueInputOption("USER-ENTERED").Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		fmt.Println("Successfully printed data to output sheet!")
+
+	} else { // Write Stat Line Data to Stat Builder Sheet if no flags present
 		writeRange = "Stat Builder!M8"
 		statValues := calcstats("log.csv")
 		carFullName := currentCar.Manufacturer + " " + currentCar.Model
