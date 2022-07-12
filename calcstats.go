@@ -70,8 +70,8 @@ func check(e error) {
 }
 
 // Calculate statistics during a race: Best lap time, track top speed, and lap sector times for La Selva Circuit
-// Returns Best Lap Time, followed by Track Top Speed
-func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string) {
+// Returns Best Lap Time, followed by Track Top Speed, then an array of times for Sectors 1-4
+func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, times []string) {
 	rows := readLog(csvFile)
 	// check data is received before doing anything, else will crash due to no data in the csv file
 	if len(rows) < 1 {
@@ -140,8 +140,8 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string) {
 	bestLap := bl[len(bl)-1]
 	// Check time at the end of the race if you're at the finish line
 	if d[len(d)-1]-(5951*l[len(l)-1]) > 5951 {
-		if t[len(t)-1] < bestLap {
-			bestLap = t[len(t)-1]
+		if t[len(t)-1]+0.0125 < bestLap {
+			bestLap = t[len(t)-1] + 0.0125 // The game seems to take this much extra time when finishing the race
 		}
 	}
 	// Convert to 00:00.000 time format
@@ -158,9 +158,79 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string) {
 	topSpeedStr := strconv.FormatFloat(topSpeed, 'f', 2, 32)
 
 	// Calculate Track Sector Times
-	// TODO
+	s1Time := 0.0
+	s2Time := 0.0
+	s3Time := 0.0
+	s4Time := 0.0
+	s1TimeTmp := 0.0
+	s2TimeTmp := 0.0
+	s3TimeTmp := 0.0
+	s4TimeTmp := 0.0
+	s1End := 0.0
+	s2End := 0.0
+	s3End := 0.0
+	dist := 0.0
+	endLapDist := 0.0
 
-	return bestLapStr, topSpeedStr
+	for i, val := range d {
+		if i == 0 || l[i] != l[i-1] {
+			endLapDist = val
+		}
+		dist = val - endLapDist
+
+		if dist > 1878 && dist < 1879 {
+			s1End = t[i]
+			s1TimeTmp = s1End
+		} else if dist > 3184 && dist < 3185 {
+			s2End = t[i]
+			s2TimeTmp = s2End - s1End
+		} else if dist > 4311 && dist < 4312 {
+			s3End = t[i]
+			s3TimeTmp = s3End - s2End
+		} else if i == len(l)-1 || l[i] != l[i+1] {
+			s4TimeTmp = (t[i] - s3End) + 0.0125
+			if t[i] <= bestLap {
+				s1Time = s1TimeTmp
+				s2Time = s2TimeTmp
+				s3Time = s3TimeTmp
+				s4Time = s4TimeTmp
+			}
+		}
+	}
+
+	// Convert to 00:00:00 duration format
+	minutes := strconv.FormatFloat(math.Floor(s1Time/60), 'f', 0, 32)
+	seconds := strconv.FormatFloat(math.Mod(s1Time, 60), 'f', 3, 32)
+	if math.Mod(s1Time, 60) < 1 {
+		seconds = "0" + seconds
+	}
+	s1TimeStr := minutes + ":" + seconds
+
+	minutes = strconv.FormatFloat(math.Floor(s2Time/60), 'f', 0, 32)
+	seconds = strconv.FormatFloat(math.Mod(s2Time, 60), 'f', 3, 32)
+	if math.Mod(s2Time, 60) < 1 {
+		seconds = "0" + seconds
+	}
+	s2TimeStr := minutes + ":" + seconds
+
+	minutes = strconv.FormatFloat(math.Floor(s3Time/60), 'f', 0, 32)
+	seconds = strconv.FormatFloat(math.Mod(s3Time, 60), 'f', 3, 32)
+	if math.Mod(s3Time, 60) < 1 {
+		seconds = "0" + seconds
+	}
+	s3TimeStr := minutes + ":" + seconds
+
+	minutes = strconv.FormatFloat(math.Floor(s4Time/60), 'f', 0, 32)
+	seconds = strconv.FormatFloat(math.Mod(s4Time, 60), 'f', 3, 32)
+	if math.Mod(s4Time, 60) < 1 {
+		seconds = "0" + seconds
+	}
+	s4TimeStr := minutes + ":" + seconds
+
+	var sectorTimes []string
+	sectorTimes = append(sectorTimes, s1TimeStr, s2TimeStr, s3TimeStr, s4TimeStr)
+
+	return bestLapStr, topSpeedStr, sectorTimes
 }
 
 // calculate stats

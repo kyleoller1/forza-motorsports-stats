@@ -211,9 +211,14 @@ func main() {
 	} else if isFlagPassed("r") == true { // Enables Race Mode: writes Best Lap Time, Track Top Speed, Track Sector Times
 		timeWriteRange := "Stat Builder!N8"
 		speedWriteRange := "Stat Builder!AJ8"
-		bestLap, topSpeed := calcRaceStats("log.csv")
+		sectorsWriteRange := "Stat Builder!AQ8"
+		bestLap, topSpeed, times := calcRaceStats("log.csv")
 		tWV := []interface{}{bestLap}
 		sWV := []interface{}{topSpeed}
+		secWV := []interface{}{}
+		for _, v := range times {
+			secWV = append(secWV, v)
+		}
 
 		// Write Data to Sheet
 		var vr sheets.ValueRange // Best Lap Time
@@ -225,6 +230,12 @@ func main() {
 		var vr2 sheets.ValueRange
 		vr2.Values = append(vr2.Values, sWV) // Track Top Speed
 		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, speedWriteRange, &vr2).ValueInputOption("USER-ENTERED").Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		var vr3 sheets.ValueRange
+		vr3.Values = append(vr3.Values, secWV) // Sector Times
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, sectorsWriteRange, &vr3).ValueInputOption("USER-ENTERED").Do()
 		if err != nil {
 			log.Fatalf("Unable to print data to sheet. %v", err)
 		}
