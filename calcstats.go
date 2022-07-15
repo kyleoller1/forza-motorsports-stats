@@ -234,7 +234,7 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, ti
 }
 
 // calculate stats
-func calculate(rows [][]string) ([][]string, []string) {
+func calculate(rows [][]string) (r [][]string, out []string) {
 	// Find row numbers based on column header names (row 0)
 	powerRow := 0
 	torqueRow := 0
@@ -244,6 +244,7 @@ func calculate(rows [][]string) ([][]string, []string) {
 	driveTrainRow := 0
 	timeRow := 0
 	gearRow := 0
+	classLetterRow := 0
 
 	for k, v := range rows[0] {
 		if v == "Speed" {
@@ -262,10 +263,13 @@ func calculate(rows [][]string) ([][]string, []string) {
 			timeRow = k
 		} else if v == "Gear" {
 			gearRow = k
+		} else if v == "CarClass" {
+			classLetterRow = k
 		}
 	}
 
 	var output []string
+	carClass := rows[1][classLetterRow]
 	var t []float64  // array of timestamp values
 	var s []float64  // array of speed values
 	var b []float64  // array of boost values
@@ -381,20 +385,54 @@ func calculate(rows [][]string) ([][]string, []string) {
 		output = append(output, strconv.FormatFloat(zeroTo100, 'f', 3, 32))
 	}
 
-	// Get 60-150mph time
-	sixtyTo150, err := getTimeBetween(60, 150, t, s)
-	if err != nil {
-		output = append(output, "Failed!")
-	} else {
-		output = append(output, strconv.FormatFloat(sixtyTo150, 'f', 3, 32))
-	}
+	if carClass == "0" || carClass == "1" { // D Class or C Class
+		// Get 25-75mph time
+		twentyfiveTo75, err := getTimeBetween(25, 75, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(twentyfiveTo75, 'f', 3, 32))
+		}
 
-	// Get 100-200mph time
-	hundredTo200, err := getTimeBetween(100, 200, t, s)
-	if err != nil {
-		output = append(output, "Failed!")
-	} else {
-		output = append(output, strconv.FormatFloat(hundredTo200, 'f', 3, 32))
+		// Get 50-100mph time
+		fiftyTo100, err := getTimeBetween(50, 100, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(fiftyTo100, 'f', 3, 32))
+		}
+	} else if carClass == "2" || carClass == "3" { // B Class or A Class
+		// Get 50-100mph time
+		fiftyTo100, err := getTimeBetween(50, 100, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(fiftyTo100, 'f', 3, 32))
+		}
+
+		// Get 60-150mph time
+		sixtyTo150, err := getTimeBetween(60, 150, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(sixtyTo150, 'f', 3, 32))
+		}
+	} else { // S1, S2 and X Class
+		// Get 60-150mph time
+		sixtyTo150, err := getTimeBetween(60, 150, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(sixtyTo150, 'f', 3, 32))
+		}
+
+		// Get 100-200mph time
+		hundredTo200, err := getTimeBetween(100, 200, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(hundredTo200, 'f', 3, 32))
+		}
 	}
 
 	// Get 60-0mph time
