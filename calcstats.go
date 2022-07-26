@@ -198,34 +198,34 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, ti
 		}
 	}
 
-	// Convert to 00:00:00 duration format
+	// Convert to hh:mm:ss.000 duration format
 	minutes := strconv.FormatFloat(math.Floor(s1Time/60), 'f', 0, 32)
 	seconds := strconv.FormatFloat(math.Mod(s1Time, 60), 'f', 3, 32)
 	if math.Mod(s1Time, 60) < 1 {
 		seconds = "0" + seconds
 	}
-	s1TimeStr := minutes + ":" + seconds
+	s1TimeStr := "00:" + minutes + ":" + seconds
 
 	minutes = strconv.FormatFloat(math.Floor(s2Time/60), 'f', 0, 32)
 	seconds = strconv.FormatFloat(math.Mod(s2Time, 60), 'f', 3, 32)
 	if math.Mod(s2Time, 60) < 1 {
 		seconds = "0" + seconds
 	}
-	s2TimeStr := minutes + ":" + seconds
+	s2TimeStr := "00:" + minutes + ":" + seconds
 
 	minutes = strconv.FormatFloat(math.Floor(s3Time/60), 'f', 0, 32)
 	seconds = strconv.FormatFloat(math.Mod(s3Time, 60), 'f', 3, 32)
 	if math.Mod(s3Time, 60) < 1 {
 		seconds = "0" + seconds
 	}
-	s3TimeStr := minutes + ":" + seconds
+	s3TimeStr := "00:" + minutes + ":" + seconds
 
 	minutes = strconv.FormatFloat(math.Floor(s4Time/60), 'f', 0, 32)
 	seconds = strconv.FormatFloat(math.Mod(s4Time, 60), 'f', 3, 32)
 	if math.Mod(s4Time, 60) < 1 {
 		seconds = "0" + seconds
 	}
-	s4TimeStr := minutes + ":" + seconds
+	s4TimeStr := "00:" + minutes + ":" + seconds
 
 	var sectorTimes []string
 	sectorTimes = append(sectorTimes, s1TimeStr, s2TimeStr, s3TimeStr, s4TimeStr)
