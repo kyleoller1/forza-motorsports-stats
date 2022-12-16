@@ -150,6 +150,9 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, ti
 		min = "0" + min
 	}
 	sec := strconv.FormatFloat(math.Mod(bestLap, 60), 'f', 3, 32)
+	if len(sec) == 1 {
+		sec = "0" + sec
+	}
 	bestLapStr := min + ":" + sec
 
 	// Find the track top speed
