@@ -150,7 +150,8 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, ti
 		min = "0" + min
 	}
 	sec := strconv.FormatFloat(math.Mod(bestLap, 60), 'f', 3, 32)
-	if len(sec) == 1 {
+	secNum, _ := strconv.ParseFloat(sec, 8)
+	if secNum < 10 {
 		sec = "0" + sec
 	}
 	bestLapStr := min + ":" + sec
