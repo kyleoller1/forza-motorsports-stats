@@ -89,14 +89,18 @@ func main() {
 	// Parse Flags
 	ordinalPTR := flag.Bool("o", false, "Enables Ordinal Info Collection Mode")
 	racePTR := flag.Bool("r", false, "Enables Race Mode for tracking best lap time, track top speed, and lap sector times (La Selva Circuit)")
+	dragPTR := flag.Bool("d", false, "Enables Drag Mode to calculate Drag times and speeds")
 	flag.Parse()
 	ordinalMode := *ordinalPTR
 	raceMode := *racePTR
+	dragMode := *dragPTR
 
 	if ordinalMode {
 		log.Println("Ordinal Info Collection mode enabled")
 	} else if raceMode {
 		log.Println("Race mode enabled")
+	} else if dragMode {
+		log.Println("Drag Mode enabled")
 	}
 
 	ctx := context.Background()
@@ -209,9 +213,9 @@ func main() {
 		fmt.Println("Successfully printed ordinal numbers to output sheet!")
 
 	} else if isFlagPassed("r") == true { // Enables Race Mode: writes Best Lap Time, Track Top Speed, Track Sector Times
-		timeWriteRange := "Stat Builder!N8"
-		speedWriteRange := "Stat Builder!AJ8"
-		sectorsWriteRange := "Stat Builder!AQ8"
+		timeWriteRange := "Stat Builder!B8"
+		speedWriteRange := "Stat Builder!Y8"
+		sectorsWriteRange := "Stat Builder!AF8"
 		bestLap, topSpeed, times := calcRaceStats("log.csv")
 		tWV := []interface{}{bestLap}
 		sWV := []interface{}{topSpeed}
@@ -241,8 +245,36 @@ func main() {
 		}
 		fmt.Println("Successfully printed data to output sheet!")
 
+	} else if isFlagPassed("d") == true { // Enables Drag Mode: Prints Drag times and speeds
+		timesWriteRange := "Stat Builder!AK8"
+		speedsWriteRange := "Stat Builder!AK9"
+		times, speeds := calcDragTimes("log.csv")
+		tWV := []interface{}{}
+		for _, v := range times {
+			tWV = append(tWV, v)
+		}
+		sWV := []interface{}{}
+		for _, v := range speeds {
+			sWV = append(sWV, v)
+		}
+
+		// Write Data to Sheet
+		var vr sheets.ValueRange // Drag Times
+		vr.Values = append(vr.Values, tWV)
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, timesWriteRange, &vr).ValueInputOption("USER-ENTERED").Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		var vr2 sheets.ValueRange
+		vr2.Values = append(vr2.Values, sWV) // Drag Speeds
+		_, err = srv.Spreadsheets.Values.Update(spreadsheetId, speedsWriteRange, &vr2).ValueInputOption("USER-ENTERED").Do()
+		if err != nil {
+			log.Fatalf("Unable to print data to sheet. %v", err)
+		}
+		fmt.Println("Successfully printed data to output sheet!")
+
 	} else { // Write Stat Line Data to Stat Builder Sheet if no flags present
-		writeRange = "Stat Builder!M8"
+		writeRange = "Stat Builder!A8"
 		statValues := calcstats("log.csv")
 		carFullName := currentCar.Manufacturer + " " + currentCar.Model
 		writeValues = append(writeValues, // Builds Stat Line to leaderboard specifications
@@ -259,19 +291,20 @@ func main() {
 			currentCar.Litreage,    // Engine Litreage
 			currentCar.Engine,      // Engine
 			currentCar.Aspiration,  // Aspiration
-			statValues[11],         // Peak Boost
+			statValues[12],         // Peak Boost
 			statValues[2],          // Peak Horsepower
 			statValues[3],          // Peak Torque
 			"",                     // Weight (not handled)
 			"",                     // Power to Weight (not handled)
 			statValues[4],          // 0-60 Time
 			statValues[5],          // 0-100 Time
-			statValues[6],          // 60-150 Time
-			statValues[7],          // 100-200 Time
-			statValues[10],         // Top Speed
+			statValues[6],          // CUSTOMIZED FORMAT TO REVERT LATER! UPDATE BELOW VALUES******** 50-100 Time
+			statValues[7],          // 60-150 Time
+			statValues[8],          // 100-200 Time
+			statValues[11],         // Top Speed
 			"",                     // Track Top Speed (not handled)
-			statValues[8],          // 60-0 Time
-			statValues[9],          // 100-0 Time
+			statValues[9],          // 60-0 Time
+			statValues[10],         // 100-0 Time
 			"",                     // Lateral Gs at 60mph (not handled)
 			"",                     // Lateral Gs at 120mpg (not handled)
 			currentCar.Value)       // Car Value

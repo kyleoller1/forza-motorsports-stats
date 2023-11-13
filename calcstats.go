@@ -69,6 +69,155 @@ func check(e error) {
 	}
 }
 
+// Calculate Drag Race Statistics:
+// Returns an array of times (as strings) for 1/8mi, 1/4mi, 1/2mi and 1mi, along with an array of corresponding speeds for each
+func calcDragTimes(csvFile string) (times []string, speeds []string) {
+	rows := readLog(csvFile)
+	// check data is received before doing anything, else will crash due to no data in the csv file
+	if len(rows) < 1 {
+		log.Fatalf("CSV File is empty!")
+	}
+
+	// Find row numbers based on column header names (row 0)
+	timeRow := 0
+	speedRow := 0
+
+	for k, v := range rows[0] {
+		if v == "TimestampMS" {
+			timeRow = k
+		} else if v == "Speed" {
+			speedRow = k
+		}
+	}
+
+	var t []float64  // array of timestamp values
+	var s []float64  // array of speed values
+	var as []float64 // array of running average speed values
+	var d []float64  // array of calculated distance traveled values
+
+	for i := range rows {
+		if i == 0 { // skip first row (header/column names)
+			continue
+		}
+
+		// Add ALL speed value from row to array
+		speed, err := strconv.ParseFloat(rows[i][speedRow], 32)
+		check(err)
+		s = append(s, (speed)) // kept as meters/sec
+	}
+
+	startIndex := 0
+	for s[startIndex] < 0.05 { // While current speed is less than 0.05 m/s,
+		startIndex++ // Increase until we find the index at which the car actually starts moving
+	}
+
+	s = nil // Reset speed values
+	for i := range rows {
+		if i <= startIndex { // Ignore all values before the car starts moving
+			continue
+		}
+
+		// Add only timestamps after car starts moving from row to array
+		time, err := strconv.ParseFloat(rows[i][timeRow], 32)
+		check(err)
+		t = append(t, time)
+
+		// Add only speed values after car starts moving from row to array
+		speed, err := strconv.ParseFloat(rows[i][speedRow], 32)
+		check(err)
+		s = append(s, (speed)) // kept as meters/sec
+	}
+
+	sum := 0.0         // Running sum of speed values
+	avg := 0.0         // Running average of speed values
+	for i := range s { // Populate Average Speed Values
+		sum = sum + s[i]
+		avg = sum / float64((i + 1))
+		as = append(as, avg)
+	}
+
+	currTime := 0.0     // Running time the car has been moving
+	dist := 0.0         // Running distance traveled in miles
+	for i := range as { // Populate Distance Values
+		currTime = (t[i] - t[0]) / 1000        // Current time since motion started set in seconds
+		dist = as[i] * currTime * 0.0006213712 // Distance = avgSpeed * Time, converted from meters to miles
+		d = append(d, dist)
+	}
+
+	var dragTimes []string
+	var dragSpeeds []string
+
+	//Find 1/8 Mile Time + Speed
+	if d[len(d)-1] < 0.1251 { // Car didn't travel 1/8 mile
+		dragTimes = append(dragTimes, "Failed!")
+		dragSpeeds = append(dragSpeeds, "Failed!")
+	} else {
+		var dragTime string
+		var dragSpeed string
+		i := 0
+		for d[i] <= 0.1251 {
+			dragTime = strconv.FormatFloat((t[i]-t[0])/1000, 'f', 3, 32)
+			dragSpeed = strconv.FormatFloat(s[i]*2.237, 'f', 2, 32)
+			i++
+		}
+		dragTimes = append(dragTimes, dragTime)
+		dragSpeeds = append(dragSpeeds, dragSpeed)
+	}
+
+	//Find 1/4 Mile Time + Speed
+	if d[len(d)-1] < 0.2501 { // Car didn't travel 1/4 mile
+		dragTimes = append(dragTimes, "Failed!")
+		dragSpeeds = append(dragSpeeds, "Failed!")
+	} else {
+		var dragTime string
+		var dragSpeed string
+		i := 0
+		for d[i] <= 0.2501 {
+			dragTime = strconv.FormatFloat((t[i]-t[0])/1000, 'f', 3, 32)
+			dragSpeed = strconv.FormatFloat(s[i]*2.237, 'f', 2, 32)
+			i++
+		}
+		dragTimes = append(dragTimes, dragTime)
+		dragSpeeds = append(dragSpeeds, dragSpeed)
+	}
+
+	//Find 1/2 Mile Time + Speed
+	if d[len(d)-1] < 0.5001 { // Car didn't travel 1/2 mile
+		dragTimes = append(dragTimes, "Failed!")
+		dragSpeeds = append(dragSpeeds, "Failed!")
+	} else {
+		var dragTime string
+		var dragSpeed string
+		i := 0
+		for d[i] <= 0.5001 {
+			dragTime = strconv.FormatFloat((t[i]-t[0])/1000, 'f', 3, 32)
+			dragSpeed = strconv.FormatFloat(s[i]*2.237, 'f', 2, 32)
+			i++
+		}
+		dragTimes = append(dragTimes, dragTime)
+		dragSpeeds = append(dragSpeeds, dragSpeed)
+	}
+
+	//Find 1 Mile Time + Speed
+	if d[len(d)-1] < 1.0001 { // Car didn't travel 1 mile
+		dragTimes = append(dragTimes, "Failed!")
+		dragSpeeds = append(dragSpeeds, "Failed!")
+	} else {
+		var dragTime string
+		var dragSpeed string
+		i := 0
+		for d[i] <= 1.0001 {
+			dragTime = strconv.FormatFloat((t[i]-t[0])/1000, 'f', 3, 32)
+			dragSpeed = strconv.FormatFloat(s[i]*2.237, 'f', 2, 32)
+			i++
+		}
+		dragTimes = append(dragTimes, dragTime)
+		dragSpeeds = append(dragSpeeds, dragSpeed)
+	}
+
+	return dragTimes, dragSpeeds
+}
+
 // Calculate statistics during a race: Best lap time, track top speed, and lap sector times for La Selva Circuit
 // Returns Best Lap Time, followed by Track Top Speed, then an array of times for Sectors 1-4
 func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, times []string) {
@@ -177,6 +326,9 @@ func calcRaceStats(csvFile string) (bestLapTime string, trackTopSpeed string, ti
 	endLapDist := 0.0
 
 	for i, val := range d {
+		if val < 0 {
+			continue
+		}
 		if i == 0 || l[i] != l[i-1] {
 			endLapDist = val
 		}
@@ -389,7 +541,34 @@ func calculate(rows [][]string) (r [][]string, out []string) {
 		output = append(output, strconv.FormatFloat(zeroTo100, 'f', 3, 32))
 	}
 
-	if carClass == "0" || carClass == "1" { // D Class or C Class
+	// CUSTOMIZED FORMAT TO REVERT LATER
+	if len(carClass) != 0 {
+		// Get 50-100mph time
+		fiftyTo100, err := getTimeBetween(50, 100, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(fiftyTo100, 'f', 3, 32))
+		}
+
+		// Get 60-150mph time
+		sixtyTo150, err := getTimeBetween(60, 150, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(sixtyTo150, 'f', 3, 32))
+		}
+
+		// Get 100-200mph time
+		hundredTo200, err := getTimeBetween(100, 200, t, s)
+		if err != nil {
+			output = append(output, "Failed!")
+		} else {
+			output = append(output, strconv.FormatFloat(hundredTo200, 'f', 3, 32))
+		}
+	}
+
+	/*if carClass == "0" || carClass == "1" { // D Class or C Class
 		// Get 25-75mph time
 		twentyfiveTo75, err := getTimeBetween(25, 75, t, s)
 		if err != nil {
@@ -437,7 +616,7 @@ func calculate(rows [][]string) (r [][]string, out []string) {
 		} else {
 			output = append(output, strconv.FormatFloat(hundredTo200, 'f', 3, 32))
 		}
-	}
+	}*/
 
 	// Get 60-0mph time
 	sixtytoZero, err := getTimeBetween(60, 0, t, s)
