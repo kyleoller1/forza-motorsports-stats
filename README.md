@@ -54,7 +54,8 @@ Enable debug information: `-d`
 ### Writestats command line options
 Default: writes stat line to sheet and triggers color script to color output data  
 Ordinal Info Collection Mode: `-o` Writes ordinal numbers into Ordinal Data sheet  
-Race Mode: `-r` Writes race statistics - best lap time and track top speed  
+Race Mode: `-r` Writes race statistics - best lap time and track top speed + track sector times  
+Drag Mode: `-d` Writes Drag Race statistics: 1/8 mi, 1/4mi, 1/2mi and 1mi times along with speeds  
 
 Currently for use in Forza Horizon 5 Leaderboards and Stat Tools Spreadsheet  
 
@@ -62,7 +63,8 @@ Currently for use in Forza Horizon 5 Leaderboards and Stat Tools Spreadsheet
 ##### Example
 `writestats`   
 `writestats -o`  
-`writestats -r`
+`writestats -r`  
+`writestats -d`
 
 
 &nbsp;
