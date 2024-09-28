@@ -121,16 +121,19 @@ func main() {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
 
-	spreadsheetId := "1UzB2IIzqNqzs9sWWV65w0VVHUmUaeFH1eGlK4-jyNMc"
+	spreadsheetId := "1mDdkX67l3D1CEGdN0O584Pgjzs9rcmxho3s8A3lDS-4"
 
 	//Read Ordinal Data and store in Map
 	type Car struct {
+		RaceTeam     string
 		Manufacturer string
 		Model        string
+		Number       string
 		Year         string
 		Country      string
 		Designation  string
-		CarType      string
+		TypeClass    string
+		Division     string
 		Drivetrain   string
 		Setup        string
 		Engine       string
@@ -158,22 +161,25 @@ func main() {
 		// Store all information in a map where the Ordinal Number is the key and
 		// the value is a struct "Car", which stores all info about the car
 		for _, row := range resp.Values {
-			if len(row) < 13 { // If the information row is incomplete
+			if len(row) < 15 { // If the information row is incomplete
 				continue
 			}
 			ordinalMap[fmt.Sprintf("%v", row[0])] = Car{
-				Manufacturer: fmt.Sprintf("%v", row[1]),
-				Model:        fmt.Sprintf("%v", row[2]),
-				Year:         fmt.Sprintf("%v", row[3]),
-				Country:      fmt.Sprintf("%v", row[4]),
-				Designation:  fmt.Sprintf("%v", row[5]),
-				CarType:      fmt.Sprintf("%v", row[6]),
-				Drivetrain:   fmt.Sprintf("%v", row[7]),
-				Setup:        fmt.Sprintf("%v", row[8]),
-				Engine:       fmt.Sprintf("%v", row[9]),
-				Aspiration:   fmt.Sprintf("%v", row[10]),
-				Litreage:     fmt.Sprintf("%v", row[11]),
-				Value:        fmt.Sprintf("%v", row[12]),
+				RaceTeam:     fmt.Sprintf("%v", row[1]),
+				Manufacturer: fmt.Sprintf("%v", row[2]),
+				Model:        fmt.Sprintf("%v", row[3]),
+				Number:       fmt.Sprintf("%v", row[4]),
+				Year:         fmt.Sprintf("%v", row[5]),
+				Country:      fmt.Sprintf("%v", row[6]),
+				Designation:  fmt.Sprintf("%v", row[7]),
+				TypeClass:    fmt.Sprintf("%v", row[8]),
+				Division:     fmt.Sprintf("%v", row[9]),
+				Drivetrain:   fmt.Sprintf("%v", row[10]),
+				Setup:        fmt.Sprintf("%v", row[11]),
+				Engine:       fmt.Sprintf("%v", row[12]),
+				Aspiration:   fmt.Sprintf("%v", row[13]),
+				Litreage:     fmt.Sprintf("%v", row[14]),
+				Value:        fmt.Sprintf("%v", row[15]),
 			}
 		}
 		if isFlagPassed("o") == false {
@@ -276,7 +282,7 @@ func main() {
 	} else { // Write Stat Line Data to Stat Builder Sheet if no flags present
 		writeRange = "Stat Builder!A8"
 		statValues := calcstats("log.csv")
-		carFullName := currentCar.Manufacturer + " " + currentCar.Model
+		carFullName := currentCar.Number + " " + currentCar.Manufacturer + " " + currentCar.Model
 		writeValues = append(writeValues, // Builds Stat Line to leaderboard specifications
 			carFullName,            // Car Name
 			"",                     // Best Lap Time (not handled)
@@ -285,7 +291,7 @@ func main() {
 			"",                     // Country Flag (not handled)
 			statValues[0],          // PI Class Number
 			currentCar.Designation, // Car Designation
-			currentCar.CarType,     // Car Type (Category)
+			currentCar.TypeClass,   // Car Type (Category)
 			statValues[1],          // Drivetrain (from actual stats, not default data)
 			currentCar.Setup,       // Engine Setup
 			currentCar.Litreage,    // Engine Litreage

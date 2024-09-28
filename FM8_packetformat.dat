@@ -83,3 +83,8 @@ u8 Gear;
 s8 Steer;
 s8 NormalizedDrivingLine;
 s8 NormalizedAIBrakeDifference;
+f32 TireWearFrontLeft;
+f32 TireWearFrontRight;
+f32 TireWearRearLeft;
+f32 TireWearRearRight;
+s32 TrackOrdinal
